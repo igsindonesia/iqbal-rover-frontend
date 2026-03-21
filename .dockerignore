@@ -1,0 +1,13 @@
+# .dockerignore
+node_modules
+npm-debug.log
+yarn-error.log
+.git
+.vscode
+.idea
+.env*.local
+dist
+.vite
+.DS_Store
+*.log
+logs/

@@ -11,8 +11,7 @@ import {
   Award,
   TrendingUp,
   ChevronUp,
-  ChevronDown,
-  Leaf
+  ChevronDown
 } from "lucide-vue-next";
 
 import Footer from "@/components/user/UserFooter.vue"
@@ -43,7 +42,7 @@ function toggleFaq(index) {
           </p>
           <div class="flex flex-col sm:flex-row justify-center gap-4 mb-12">
             <button class="px-8 py-4 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transform hover:scale-105 transition-all shadow-lg hover:shadow-xl">
-              Mulai Sekarang →
+              Daftar Akun Sekarang →
             </button>
             <button class="px-8 py-4 bg-white border-2 border-green-600 text-green-700 font-semibold rounded-xl hover:bg-green-50 transform hover:scale-105 transition-all">
               Lihat Demo

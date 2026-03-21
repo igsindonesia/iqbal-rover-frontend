@@ -187,6 +187,4 @@ const scrollToSection = (sectionId) => {
       </div>
     </div>
   </nav>
-  
-  <div class="h-16"></div>
 </template>
