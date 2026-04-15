@@ -22,17 +22,27 @@ const createApiInstance = (tokenKey, authEventName, onUnauthorized) => {
   instance.interceptors.response.use(
     (response) => response,
     (error) => {
+      // Debug: Cek URL apa yang bikin error 401
+      console.log("Error URL:", error.config?.url);
+      console.log("Error Status:", error.response?.status);
+
+      const isAuthPath = error.config?.url?.includes("/login") ||
+        error.config?.url?.includes("/register");
+
       if (error.response?.status === 401) {
-        localStorage.removeItem(tokenKey);
-        if (onUnauthorized) {
-          localStorage.removeItem(onUnauthorized);
+        // JANGAN jalankan alert jika ini request login/regis
+        if (!isAuthPath) {
+          localStorage.removeItem(tokenKey);
+          if (onUnauthorized) localStorage.removeItem(onUnauthorized);
+          window.dispatchEvent(new Event(authEventName));
+        } else {
+          // Kalau gagal login, biarkan LoginView yang urus, jangan kirim event auth-changed
+          console.warn("Kredensial salah, tapi bukan token expired.");
         }
-        window.dispatchEvent(new Event(authEventName));
       }
       return Promise.reject(error);
     }
   );
-
   return instance;
 };
 

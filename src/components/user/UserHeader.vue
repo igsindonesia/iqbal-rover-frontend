@@ -42,7 +42,7 @@ const logout = async () => {
   } catch (error) {
     const status = error?.response?.status;
     
-    // ✅ TANPA console.log / console.error
+    // error message without
     if (status !== 401 && status !== 403) {
       errorMsg.value = "Gagal logout. Cek koneksi internet.";
       showError.value = true;
@@ -51,12 +51,12 @@ const logout = async () => {
       setTimeout(() => { showError.value = false; }, 3000);
     }
   } finally {
-    // Bersihkan data lokal
+    // clear cache on localstorage
     localStorage.removeItem("token");
     localStorage.removeItem("username");
     emitAuthChange();
     
-    // Reset UI
+    // Reset UI in mobile
     closeMobileMenu();
     isLoggingOut.value = false;
     
@@ -81,7 +81,6 @@ const scrollToSection = (sectionId) => {
 </script>
 
 <template>
-  <!-- 🟢 Notifikasi Error (tanpa library) -->
   <transition name="fade">
     <div v-show="showError" class="fixed top-20 left-1/2 -translate-x-1/2 bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-lg shadow-md text-sm font-medium z-[60]">
       ⚠️ {{ errorMsg }}

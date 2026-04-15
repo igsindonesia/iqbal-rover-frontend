@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
+import { jwtDecode } from "jwt-decode"
 import { ROUTES, STORAGE_KEYS } from "@/constants";
 
 // Views
@@ -31,6 +32,18 @@ const parseJSON = (value) => {
 const parseIntSafe = (value) => {
   const parsed = parseInt(value, 10);
   return isNaN(parsed) ? 0 : parsed;
+};
+
+const isTokenExpired = (token) => {
+  if (!token) return true;
+  try {
+    const decoded = jwtDecode(token);
+    const currentTime = Date.now() / 1000;
+    // tolance 10 second 
+    return decoded.exp < (currentTime - 10);
+  } catch (e) {
+    return true;
+  }
 };
 
 // Route Definitions
@@ -85,6 +98,7 @@ const router = createRouter({
 router.beforeEach((to, _, next) => {
   const token = localStorage.getItem(STORAGE_KEYS.USER_TOKEN);
   const adminToken = localStorage.getItem(STORAGE_KEYS.ADMIN_TOKEN);
+  const isUserValid = token && !isTokenExpired(token);
   const isLoggedIn = !!token;
   const isAdminLoggedIn = !!adminToken;
 
@@ -98,27 +112,29 @@ router.beforeEach((to, _, next) => {
     }
 
     if (to.path === ROUTES.ADMIN_LOGIN) {
-      if (isAdminLoggedIn) {
-        return next(ROUTES.ADMIN_DASHBOARD);
-      }
-      return next();
+      return isAdminLoggedIn ? next(ROUTES.ADMIN_DASHBOARD) : next();
     }
 
     if (!isAdminLoggedIn) {
       return next(ROUTES.ADMIN_LOGIN);
     }
-    return next();
+    return isAdminLoggedIn ? next() : next(ROUTES.ADMIN_LOGIN);
   }
 
   // Auth Required Guard
   if (to.meta.requiresAuth && !isLoggedIn) {
     return next(ROUTES.LOGIN);
   }
-
+  // auth token experied guard
+  if (to.meta.requiresAdminAuth && !isUserValid) {
+    localStorage.removeItem(STORAGE_KEYS.USER_TOKEN);
+    return next(ROUTES.LOGIN);
+  }
   // Guest Only Guard
   if (to.meta.guestOnly && isLoggedIn) {
     return next(ROUTES.DASHBOARD);
   }
+
 
   next();
 });
