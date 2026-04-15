@@ -84,24 +84,39 @@ const filteredPosts = computed(() => {
   })
 })
 
+// this for handle delete post
 const deletePost = async () => {
   if (!postToDelete.value) return
 
   try {
     await postsApi.deletePost(postToDelete.value.post_id)
 
+    // Hapus dari list secara lokal (optimistic update)
     posts.value = posts.value.filter(p => p.post_id !== postToDelete.value.post_id)
+    
+    // Reset modal
     showDeleteConfirm.value = false
     postToDelete.value = null
+    
   } catch (err) {
     console.error('Error deleting post:', err)
+    console.error('Response:', err.response?.data)
+    
     error.value = err.response?.data?.detail || 'Gagal menghapus data'
+    
+    // Auto hide error setelah 5 detik
+    setTimeout(() => { error.value = null }, 5000)
   }
 }
 
 const confirmDelete = (post) => {
   postToDelete.value = post
   showDeleteConfirm.value = true
+}
+
+const closeModal = () => {
+  showDeleteConfirm.value = false
+  postToDelete.value = null
 }
 
 onMounted(() => {
@@ -165,7 +180,7 @@ onMounted(() => {
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
         </svg>
         <p class="text-red-700 text-sm flex-1">{{ error }}</p>
-        <button @click="error = ''" class="text-red-500 hover:text-red-700">✕</button>
+        <button @click="error = null" class="text-red-500 hover:text-red-700 font-bold">✕</button>
       </div>
 
       <!-- Loading State -->
@@ -179,6 +194,7 @@ onMounted(() => {
         <div
           v-for="post in filteredPosts"
           :key="post.post_id"
+          :data-post-id="post.post_id"
           class="group bg-white rounded-3xl shadow-lg overflow-hidden border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
         >
           <!-- Image -->
@@ -234,8 +250,9 @@ onMounted(() => {
               </a>
               <button
                 @click="confirmDelete(post)"
-                class="px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl transition"
+                class="px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl transition flex items-center justify-center"
                 title="Hapus"
+                aria-label="Hapus history"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -266,35 +283,52 @@ onMounted(() => {
         </router-link>
       </div>
 
-      <!-- Delete Confirmation Modal -->
-      <div v-if="showDeleteConfirm" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4">
-          <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
-            <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-            </svg>
+      <!-- ✅ Delete Confirmation Modal -->
+      <Teleport to="body">
+        <Transition
+          enter-active-class="transition duration-200 ease-out"
+          enter-from-class="opacity-0 scale-95"
+          enter-to-class="opacity-100 scale-100"
+          leave-active-class="transition duration-150 ease-in"
+          leave-from-class="opacity-100 scale-100"
+          leave-to-class="opacity-0 scale-95"
+        >
+          <div 
+            v-if="showDeleteConfirm" 
+            class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            @click.self="closeModal"
+          >
+            <div class="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
+              <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+                <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+              </div>
+              <h3 class="text-xl font-bold text-gray-800 text-center">Hapus Data?</h3>
+              <p class="text-gray-600 text-center text-sm">
+                Data yang dihapus tidak dapat dikembalikan.
+              </p>
+              <div class="flex gap-3 pt-2">
+                <button
+                  @click="closeModal"
+                  class="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold transition"
+                >
+                  Batal
+                </button>
+                <button
+                  @click="deletePost"
+                  class="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold transition"
+                >
+                  Hapus
+                </button>
+              </div>
+            </div>
           </div>
-          <h3 class="text-xl font-bold text-gray-800 text-center">Hapus Data?</h3>
-          <p class="text-gray-600 text-center text-sm">Data yang dihapus tidak dapat dikembalikan.</p>
-          <div class="flex gap-3">
-            <button
-              @click="showDeleteConfirm = false"
-              class="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold transition"
-            >
-              Batal
-            </button>
-            <button
-              @click="deletePost"
-              class="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold transition"
-            >
-              Hapus
-            </button>
-          </div>
-        </div>
-      </div>
+        </Transition>
+      </Teleport>
 
       <!-- Back Button -->
-      <div class="text-center pt-4">
+      <div class="text-center pt-4 pb-8">
         <router-link
           to="/dashboard"
           class="inline-flex items-center gap-2 text-gray-600 hover:text-gray-800 font-medium transition"
@@ -333,5 +367,16 @@ onMounted(() => {
 
 button, a {
   min-height: 44px;
+}
+
+/* Modal animation */
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
 }
 </style>
